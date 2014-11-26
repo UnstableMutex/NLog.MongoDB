@@ -1,16 +1,19 @@
-  class MongoTarget : NLog.Targets.Target
+using System;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using NLog;
+using NLog.Common;
+namespace PretentionCreator.NLogtest
+{
+    class MongoTarget : NLog.Targets.Target
     {
         private readonly string _mongoCS;
         private readonly string _db;
         private readonly string _collection;
         private MongoCollection<BsonDocument> _coll;
-
-
         public byte ExceptionRecursionLevel { get; set; }
         public bool Capped { get; set; }
         public int CappedSizeMB { get; set; }
-
-
         public MongoTarget()
         {
             Capped = true;
@@ -18,21 +21,17 @@
             ExceptionRecursionLevel = 2;
             _collection = App.Current.GetType().Namespace + "Log";
             _db = "Logs";
-
         }
         public MongoTarget(string mongoCS)
             : this()
         {
-
             _mongoCS = mongoCS;
             _coll = GetCollection();
         }
-
         long MB(long count)
         {
             return (long)(count * Math.Pow(1024, 2));
         }
-
         MongoCollection<BsonDocument> GetCollection()
         {
             var db = new MongoClient(_mongoCS).GetServer().GetDatabase(_db);
@@ -45,7 +44,6 @@
                 }
                 db.CreateCollection(_collection, b);
             }
-
             return db.GetCollection(_collection);
         }
         public MongoTarget(string mongoCS, string db, string collection)
@@ -80,6 +78,10 @@
         {
             var doc = new BsonDocument();
             doc.Add("Level", logEvent.Level.ToString());
+            doc.Add("UserName", Environment.UserName);
+            doc.Add("WKS", Environment.MachineName);
+            doc.Add("LocalDate", DateTime.Now);
+            doc.Add("UTCDate", DateTime.Now.ToUniversalTime());
             doc.Add("Message", logEvent.FormattedMessage);
             if (logEvent.Exception != null)
             {
@@ -87,7 +89,6 @@
             }
             _coll.Save(doc);
         }
-
         BsonDocument GetException(Exception ex)
         {
             return GetException(ex, ExceptionRecursionLevel);
@@ -105,3 +106,4 @@
             return doc;
         }
     }
+}
