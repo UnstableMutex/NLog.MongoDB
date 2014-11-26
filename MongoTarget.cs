@@ -1,10 +1,3 @@
-using System;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using NLog;
-using NLog.Common;
-namespace PretentionCreator.NLogtest
-{
     class MongoTarget : NLog.Targets.Target
     {
         private readonly string _mongoCS;
@@ -54,27 +47,17 @@ namespace PretentionCreator.NLogtest
             _collection = collection;
             _coll = GetCollection();
         }
-        protected override void InitializeTarget()
-        {
-            base.InitializeTarget();
-        }
-        protected override void CloseTarget()
-        {
-            base.CloseTarget();
-        }
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-        }
-        protected override void FlushAsync(AsyncContinuation asyncContinuation)
-        {
-            base.FlushAsync(asyncContinuation);
-        }
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
-            base.Write(logEvents);
+            var docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent));
+            _coll.InsertBatch(docs);
         }
         protected override void Write(LogEventInfo logEvent)
+        {
+            var doc = GetDocFromLogEventInfo(logEvent);
+            _coll.Save(doc);
+        }
+        private BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
         {
             var doc = new BsonDocument();
             doc.Add("Level", logEvent.Level.ToString());
@@ -87,7 +70,7 @@ namespace PretentionCreator.NLogtest
             {
                 doc.Add("Exception", GetException(logEvent.Exception));
             }
-            _coll.Save(doc);
+            return doc;
         }
         BsonDocument GetException(Exception ex)
         {
@@ -106,4 +89,3 @@ namespace PretentionCreator.NLogtest
             return doc;
         }
     }
-}
