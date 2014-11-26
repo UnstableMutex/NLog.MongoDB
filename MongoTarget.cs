@@ -4,20 +4,57 @@
         private readonly string _db;
         private readonly string _collection;
         private MongoCollection<BsonDocument> _coll;
-        private const byte exlevel = 2;
-        public MongoTarget(string mongoCS)
+
+
+        public byte ExceptionRecursionLevel { get; set; }
+        public bool Capped { get; set; }
+        public int CappedSizeMB { get; set; }
+
+
+        public MongoTarget()
         {
-            _mongoCS = mongoCS;
-            _collection = App.Current.GetType().Namespace+"Log";
+            Capped = true;
+            CappedSizeMB = 200;
+            ExceptionRecursionLevel = 2;
+            _collection = App.Current.GetType().Namespace + "Log";
             _db = "Logs";
-            _coll = new MongoClient(_mongoCS).GetServer().GetDatabase(_db).GetCollection(_collection);
+
+        }
+        public MongoTarget(string mongoCS)
+            : this()
+        {
+
+            _mongoCS = mongoCS;
+            _coll = GetCollection();
+        }
+
+        long MB(long count)
+        {
+            return (long)(count * Math.Pow(1024, 2));
+        }
+
+        MongoCollection<BsonDocument> GetCollection()
+        {
+            var db = new MongoClient(_mongoCS).GetServer().GetDatabase(_db);
+            if (!db.CollectionExists(_collection))
+            {
+                var b = new MongoDB.Driver.Builders.CollectionOptionsBuilder();
+                if (Capped)
+                {
+                    b = b.SetCapped(true).SetMaxSize(MB(CappedSizeMB));
+                }
+                db.CreateCollection(_collection, b);
+            }
+
+            return db.GetCollection(_collection);
         }
         public MongoTarget(string mongoCS, string db, string collection)
+            : this()
         {
             _mongoCS = mongoCS;
             _db = db;
             _collection = collection;
-            _coll = new MongoClient(_mongoCS).GetServer().GetDatabase(_db).GetCollection(_collection);
+            _coll = GetCollection();
         }
         protected override void InitializeTarget()
         {
@@ -50,7 +87,12 @@
             }
             _coll.Save(doc);
         }
-        BsonDocument GetException(Exception ex, byte level = exlevel)
+
+        BsonDocument GetException(Exception ex)
+        {
+            return GetException(ex, ExceptionRecursionLevel);
+        }
+        BsonDocument GetException(Exception ex, byte level)
         {
             var doc = new BsonDocument();
             doc.Add("Message", ex.Message);
@@ -62,3 +104,4 @@
             }
             return doc;
         }
+    }
