@@ -92,6 +92,7 @@ namespace NLog.MongoDB
             var doc = new BsonDocument();
             AddStringProperties(ex, doc);
             doc.Add("TargetSite", ex.TargetSite.Name);
+            doc.Add("exType", ex.GetType().FullName);
             if (ex.TargetSite.DeclaringType != null)
             {
                 doc.Add("ClassName", ex.TargetSite.DeclaringType.FullName);
