@@ -73,7 +73,8 @@ namespace NLog.MongoDB
             doc.Add("Level", logEvent.Level.ToString());
             doc.Add("UserName", Environment.UserName);
             doc.Add("WKS", Environment.MachineName);
-            doc.Add("LocalDate", DateTime.Now);
+            DateTime nowformongo = DateTime.Now.Add(DateTime.Now - DateTime.Now.ToUniversalTime());
+            doc.Add("LocalDate", nowformongo);
             doc.Add("UTCDate", DateTime.Now.ToUniversalTime());
             doc.Add("Message", logEvent.FormattedMessage);
             doc.Add("AppName", AppName);
