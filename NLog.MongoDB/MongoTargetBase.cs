@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 using NLog.Common;
 using NLog.Config;
 using NLog.Targets;
@@ -15,29 +13,28 @@ namespace NLog.MongoDB
     [Target("MongoTarget")]
     public class MongoTargetBase : TargetWithLayout
     {
-
         private MongoCollection<BsonDocument> _coll;
-        public byte ExceptionRecursionLevel { get; set; }
 
-
-
-        public string AppName { get; set; }
-        [RequiredParameter]
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
-        protected string CollectionName { get; set; }
         public MongoTargetBase()
         {
-          
             ExceptionRecursionLevel = 2;
             DatabaseName = "Logs";
             AppName = "Application";
             CollectionName = AppName + "Log";
         }
 
+        public byte ExceptionRecursionLevel { get; set; }
+        public string AppName { get; set; }
+
+        [RequiredParameter]
+        public string ConnectionString { get; set; }
+
+        public string DatabaseName { get; set; }
+        protected string CollectionName { get; set; }
+
         protected MongoDatabase GetDatabase()
         {
-            var db = new MongoClient(ConnectionString).GetServer().GetDatabase(DatabaseName);
+            MongoDatabase db = new MongoClient(ConnectionString).GetServer().GetDatabase(DatabaseName);
             return db;
         }
 
@@ -46,8 +43,7 @@ namespace NLog.MongoDB
             CollectionName = AppName + "Log";
             if (_coll == null)
             {
-               
-                var db = GetDatabase();
+                MongoDatabase db = GetDatabase();
                 if (!db.CollectionExists(CollectionName))
                 {
                     CreateCollection();
@@ -58,22 +54,22 @@ namespace NLog.MongoDB
 
         protected virtual void CreateCollection()
         {
-            var db = GetDatabase();
+            MongoDatabase db = GetDatabase();
             db.CreateCollection(CollectionName);
         }
 
-
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
-            var docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent));
-
+            IEnumerable<BsonDocument> docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent));
             _coll.InsertBatch(docs);
         }
+
         protected override void Write(LogEventInfo logEvent)
         {
-            var doc = GetDocFromLogEventInfo(logEvent);
+            BsonDocument doc = GetDocFromLogEventInfo(logEvent);
             _coll.Save(doc);
         }
+
         protected virtual BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
         {
             var doc = new BsonDocument();
@@ -91,11 +87,13 @@ namespace NLog.MongoDB
             }
             return doc;
         }
-        BsonDocument GetException<T>(T ex) where T : Exception
+
+        private BsonDocument GetException<T>(T ex) where T : Exception
         {
             return GetException(ex, ExceptionRecursionLevel);
         }
-        BsonDocument GetException<T>(T ex, byte level) where T : Exception
+
+        private BsonDocument GetException<T>(T ex, byte level) where T : Exception
         {
             var doc = new BsonDocument();
             AddStringProperties(ex, doc);
@@ -107,17 +105,18 @@ namespace NLog.MongoDB
             }
             if (ex.InnerException != null && level > 0)
             {
-                doc.Add("InnerException", GetException(ex.InnerException, (byte)(level - 1)));
+                doc.Add("InnerException", GetException(ex.InnerException, (byte) (level - 1)));
             }
             return doc;
         }
 
         private void AddStringProperties(Exception exception, BsonDocument doc)
         {
-            var props = exception.GetType().GetProperties().Where(x => x.PropertyType == typeof(string));
-            foreach (var pi in props)
+            IEnumerable<PropertyInfo> props =
+                exception.GetType().GetProperties().Where(x => x.PropertyType == typeof (string));
+            foreach (PropertyInfo pi in props)
             {
-                string s = (string)pi.GetValue(exception);
+                var s = (string) pi.GetValue(exception,null);
                 doc.Add(pi.Name, s);
             }
         }

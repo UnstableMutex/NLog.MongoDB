@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MongoDB.Driver;
 
 namespace NLog.MongoDB.Test
 {
@@ -10,6 +6,9 @@ namespace NLog.MongoDB.Test
     {
         static void Main(string[] args)
         {
+            MongoClient cl=new MongoClient("mongodb://localhost");
+            cl.GetServer().GetDatabase("Logs").Drop();
+
             var logger = LogManager.GetCurrentClassLogger();
             logger.Debug("debug message");
         }

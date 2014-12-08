@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using NLog.Targets;
@@ -10,27 +6,27 @@ using NLog.Targets;
 namespace NLog.MongoDB
 {
     [Target("CappedMongoTarget")]
-   public class CappedMongoTarget : MongoTargetBase
+    public class CappedMongoTarget : MongoTargetBase
     {
-        public bool IsCapped { get; set; }
-        public long MaxSize { get; set; }
-
         public CappedMongoTarget()
         {
             IsCapped = true;
             MaxSize = MB(200);
         }
-        int MB(int count)
+
+        public bool IsCapped { get; set; }
+        public long MaxSize { get; set; }
+
+        private long MB(long count)
         {
-            return (int)(count * Math.Pow(1024, 2));
-        }
-        protected override void CreateCollection()
-        {
-            var db = GetDatabase();
-            CollectionOptionsBuilder b = new CollectionOptionsBuilder();
-            b = b.SetCapped(IsCapped).SetMaxSize(MaxSize);
-            db.CreateCollection(CollectionName, b);
+            return (long) (count*Math.Pow(1024, 2));
         }
 
+        protected override void CreateCollection()
+        {
+            MongoDatabase db = GetDatabase();
+            CollectionOptionsBuilder b = CollectionOptions.SetCapped(true).SetMaxSize(MaxSize);
+            db.CreateCollection(CollectionName, b);
+        }
     }
 }
