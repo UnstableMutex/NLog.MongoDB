@@ -8,7 +8,6 @@ namespace NLog.MongoDB.Test
         {
             MongoClient cl=new MongoClient("mongodb://localhost");
             cl.GetServer().GetDatabase("Logs").Drop();
-
             var logger = LogManager.GetCurrentClassLogger();
             logger.Debug("debug message");
         }
