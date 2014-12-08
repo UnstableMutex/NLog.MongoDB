@@ -1,96 +1,86 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using NLog.Common;
 using NLog.Config;
 using NLog.Targets;
+
 namespace NLog.MongoDB
 {
-    [Target("MongoDBCanFail")]
-    class SwallowNotAvalableMongoTarget:TargetWithLayout
+    [Target("MongoTarget")]
+    public class MongoTargetBase : TargetWithLayout
     {
+
         private MongoCollection<BsonDocument> _coll;
         public byte ExceptionRecursionLevel { get; set; }
-        public bool Capped { get; set; }
-        public int CappedSizeMB { get; set; }
+
+
+
         public string AppName { get; set; }
         [RequiredParameter]
         public string ConnectionString { get; set; }
         public string DatabaseName { get; set; }
-        private string CollectionName { get; set; }
-        public SwallowNotAvalableMongoTarget()
+        protected string CollectionName { get; set; }
+        public MongoTargetBase()
         {
-            Capped = true;
-            CappedSizeMB = 200;
+
             ExceptionRecursionLevel = 2;
             DatabaseName = "Logs";
             AppName = "Application";
+            CollectionName = AppName + "Log";
         }
-        long MB(long count)
+
+        protected MongoDatabase GetDatabase()
         {
-            return (long)(count * Math.Pow(1024, 2));
+            var db = new MongoClient(ConnectionString).GetServer().GetDatabase(DatabaseName);
+            return db;
         }
+
         protected override void InitializeTarget()
         {
-            CheckCollectionExistance();
-        }
-        private void CheckCollectionExistance()
-        {
-            try
+            if (_coll == null)
             {
-                if (_coll == null)
+               
+                var db = GetDatabase();
+                if (!db.CollectionExists(CollectionName))
                 {
-                    CollectionName = AppName + "Log";
-                    var db = new MongoClient(ConnectionString).GetServer().GetDatabase(DatabaseName);
-                    if (!db.CollectionExists(CollectionName))
-                    {
-                        var b = new CollectionOptionsBuilder();
-                        if (Capped)
-                        {
-                            b = b.SetCapped(true).SetMaxSize(MB(CappedSizeMB));
-                        }
-                        db.CreateCollection(CollectionName, b);
-                    }
-                    _coll = db.GetCollection(CollectionName);
+                    CreateCollection();
                 }
-            }
-            catch (Exception)
-            {
+                _coll = db.GetCollection(CollectionName);
             }
         }
+
+        protected virtual void CreateCollection()
+        {
+            var db = GetDatabase();
+            db.CreateCollection(CollectionName);
+        }
+
+
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
             var docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent));
-            CheckCollectionExistance();
-            try
-            {
-                _coll.InsertBatch(docs);
-            }
-            catch (Exception e)
-            {
-            }
+
+            _coll.InsertBatch(docs);
         }
         protected override void Write(LogEventInfo logEvent)
         {
             var doc = GetDocFromLogEventInfo(logEvent);
-            CheckCollectionExistance();
-            try
-            {
-                _coll.Save(doc);
-            }
-            catch (Exception e)
-            {
-            }
+            _coll.Save(doc);
         }
-        private BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
+        protected virtual BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
         {
             var doc = new BsonDocument();
             doc.Add("Level", logEvent.Level.ToString());
             doc.Add("UserName", Environment.UserName);
             doc.Add("WKS", Environment.MachineName);
-            doc.Add("LocalDate", DateTime.Now);
+            DateTime nowformongo = DateTime.Now.Add(DateTime.Now - DateTime.Now.ToUniversalTime());
+            doc.Add("LocalDate", nowformongo);
             doc.Add("UTCDate", DateTime.Now.ToUniversalTime());
             doc.Add("Message", logEvent.FormattedMessage);
             doc.Add("AppName", AppName);
@@ -109,6 +99,7 @@ namespace NLog.MongoDB
             var doc = new BsonDocument();
             AddStringProperties(ex, doc);
             doc.Add("TargetSite", ex.TargetSite.Name);
+            doc.Add("exType", ex.GetType().FullName);
             if (ex.TargetSite.DeclaringType != null)
             {
                 doc.Add("ClassName", ex.TargetSite.DeclaringType.FullName);
@@ -119,12 +110,13 @@ namespace NLog.MongoDB
             }
             return doc;
         }
+
         private void AddStringProperties(Exception exception, BsonDocument doc)
         {
             var props = exception.GetType().GetProperties().Where(x => x.PropertyType == typeof(string));
             foreach (var pi in props)
             {
-                string s = (string)pi.GetValue(exception, null);
+                string s = (string)pi.GetValue(exception);
                 doc.Add(pi.Name, s);
             }
         }
