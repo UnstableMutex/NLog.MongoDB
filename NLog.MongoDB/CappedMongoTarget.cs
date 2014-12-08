@@ -20,9 +20,9 @@ namespace NLog.MongoDB
             IsCapped = true;
             MaxSize = MB(200);
         }
-        long MB(long count)
+        int MB(int count)
         {
-            return (long)(count * Math.Pow(1024, 2));
+            return (int)(count * Math.Pow(1024, 2));
         }
         protected override void CreateCollection()
         {

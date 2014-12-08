@@ -35,7 +35,11 @@ namespace NLog.MongoDB
         }
         public int Days { get; set; }
         public int Hours { get; set; }
-       
+
+        public ExpireAtMongoTarget()
+        {
+            Days = 10;
+        }
 
       
     }

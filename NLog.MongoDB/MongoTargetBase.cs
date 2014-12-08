@@ -28,7 +28,7 @@ namespace NLog.MongoDB
         protected string CollectionName { get; set; }
         public MongoTargetBase()
         {
-
+          
             ExceptionRecursionLevel = 2;
             DatabaseName = "Logs";
             AppName = "Application";
@@ -43,6 +43,7 @@ namespace NLog.MongoDB
 
         protected override void InitializeTarget()
         {
+            CollectionName = AppName + "Log";
             if (_coll == null)
             {
                

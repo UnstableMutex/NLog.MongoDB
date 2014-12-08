@@ -25,6 +25,11 @@ namespace NLog.MongoDB
             coll.CreateIndex(b, ob);
         }
 
+        public ExpireAfterMongoTarget()
+        {
+            Days = 20;
+        }
+
         public int Days { get; set; }
         protected override BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
         {

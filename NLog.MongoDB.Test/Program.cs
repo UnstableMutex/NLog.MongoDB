@@ -10,7 +10,8 @@ namespace NLog.MongoDB.Test
     {
         static void Main(string[] args)
         {
-
+            var logger = LogManager.GetCurrentClassLogger();
+            logger.Debug("debug message");
         }
     }
 }
