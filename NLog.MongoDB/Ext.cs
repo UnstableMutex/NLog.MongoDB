@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace NLog.MongoDB
 {
     public static class Ext
@@ -16,7 +12,6 @@ namespace NLog.MongoDB
             else
             {
                 logger.Info("App started. Version {0}", appVersion);
-
             }
         }
         public static void WriteAppExit(this Logger logger, Version appVersion = null)
@@ -28,7 +23,6 @@ namespace NLog.MongoDB
             else
             {
                 logger.Info("App exit. Version {0}", appVersion);
-
             }
         }
     }

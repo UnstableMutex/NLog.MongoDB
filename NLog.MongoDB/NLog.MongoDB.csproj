@@ -50,6 +50,7 @@
     <Compile Include="CappedMongoTarget.cs" />
     <Compile Include="ExpireAfterMongoTarget.cs" />
     <Compile Include="ExpireAtMongoTarget.cs" />
+    <Compile Include="Ext.cs" />
     <Compile Include="MongoTargetBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

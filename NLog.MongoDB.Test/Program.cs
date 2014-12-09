@@ -1,5 +1,6 @@
-﻿using MongoDB.Driver;
-
+﻿using System;
+using MongoDB.Driver;
+using NLog.MongoDB;
 namespace NLog.MongoDB.Test
 {
     class Program
@@ -10,6 +11,8 @@ namespace NLog.MongoDB.Test
             cl.GetServer().GetDatabase("Logs").Drop();
             var logger = LogManager.GetCurrentClassLogger();
             logger.Debug("debug message");
+            logger.WriteAppStarted();
+            logger.WriteAppStarted(new Version(1,2,3,4));
         }
     }
 }
