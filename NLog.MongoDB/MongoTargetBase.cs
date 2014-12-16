@@ -13,7 +13,7 @@ namespace NLog.MongoDB
     [Target("MongoTarget")]
     public class MongoTargetBase : TargetWithLayout
     {
-        private MongoCollection<BsonDocument> _coll;
+        protected MongoCollection<BsonDocument> _coll;
 
         public MongoTargetBase()
         {
@@ -21,6 +21,7 @@ namespace NLog.MongoDB
             DatabaseName = "Logs";
             AppName = "Application";
             CollectionName = AppName + "Log";
+            
         }
 
         public byte ExceptionRecursionLevel { get; set; }

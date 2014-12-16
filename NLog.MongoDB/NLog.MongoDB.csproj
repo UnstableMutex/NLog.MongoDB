@@ -53,6 +53,7 @@
     <Compile Include="Ext.cs" />
     <Compile Include="MongoTargetBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SubscribeMongoTarget.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
