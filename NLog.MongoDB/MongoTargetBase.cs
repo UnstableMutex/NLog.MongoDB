@@ -21,7 +21,7 @@ namespace NLog.MongoDB
             DatabaseName = "Logs";
             AppName = "Application";
             CollectionName = AppName + "Log";
-            
+
         }
 
         public byte ExceptionRecursionLevel { get; set; }
@@ -77,7 +77,7 @@ namespace NLog.MongoDB
             doc.Add("Level", logEvent.Level.ToString());
             doc.Add("UserName", Environment.UserName);
             doc.Add("WKS", Environment.MachineName);
-            DateTime nowformongo = DateTime.Now.Add(DateTime.Now - DateTime.Now.ToUniversalTime());
+            DateTime nowformongo = DateTime.Now.Add(DateTimeOffset.Now.Offset);
             doc.Add("LocalDate", nowformongo);
             doc.Add("UTCDate", DateTime.Now.ToUniversalTime());
             doc.Add("Message", logEvent.FormattedMessage);
@@ -98,6 +98,7 @@ namespace NLog.MongoDB
         {
             var doc = new BsonDocument();
             AddStringProperties(ex, doc);
+            AddIntProperties(ex, doc);
             doc.Add("TargetSite", ex.TargetSite.Name);
             doc.Add("exType", ex.GetType().FullName);
             if (ex.TargetSite.DeclaringType != null)
@@ -106,18 +107,29 @@ namespace NLog.MongoDB
             }
             if (ex.InnerException != null && level > 0)
             {
-                doc.Add("InnerException", GetException(ex.InnerException, (byte) (level - 1)));
+                doc.Add("InnerException", GetException(ex.InnerException, (byte)(level - 1)));
             }
             return doc;
+        }
+
+        private void AddIntProperties(Exception exception, BsonDocument doc)
+        {
+            IEnumerable<PropertyInfo> props =
+                exception.GetType().GetProperties().Where(x => x.PropertyType == typeof(int));
+            foreach (PropertyInfo pi in props)
+            {
+                var s = (int)pi.GetValue(exception, null);
+                doc.Add(pi.Name, s);
+            }
         }
 
         private void AddStringProperties(Exception exception, BsonDocument doc)
         {
             IEnumerable<PropertyInfo> props =
-                exception.GetType().GetProperties().Where(x => x.PropertyType == typeof (string));
+                exception.GetType().GetProperties().Where(x => x.PropertyType == typeof(string));
             foreach (PropertyInfo pi in props)
             {
-                var s = (string) pi.GetValue(exception,null);
+                var s = (string)pi.GetValue(exception, null);
                 doc.Add(pi.Name, s);
             }
         }

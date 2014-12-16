@@ -21,15 +21,27 @@ namespace NLog.MongoDB
         }
 
         private string[] _subscribers;
+        const string appnames = "AppNames";
         protected override void InitializeTarget()
         {
-
             var db = GetDatabase();
             var subscribersCollection = db.GetCollection("Subscribers");
             StringCollection coll = new StringCollection();
             foreach (BsonDocument sub in subscribersCollection.FindAll())
             {
-                coll.Add(sub["_id"].AsString);
+
+                if (sub.Contains(appnames))
+                {
+                    var arr = sub[appnames].AsBsonArray;
+                    if (arr.Contains(AppName))
+                    {
+                        coll.Add(sub["_id"].AsString);
+                    }
+                }
+                else
+                {
+                    coll.Add(sub["_id"].AsString);
+                }
             }
             if (coll.Count > 0)
             {
@@ -62,7 +74,6 @@ namespace NLog.MongoDB
             {
                 return null;
             }
-
             var doc = base.GetDocFromLogEventInfo(logEvent);
             doc.Add("Subscribers", new BsonArray(_subscribers));
             return doc;
@@ -80,7 +91,6 @@ namespace NLog.MongoDB
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
             IEnumerable<BsonDocument> docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent)).Where(x => x != null);
-
             _coll.InsertBatch(docs);
         }
 
