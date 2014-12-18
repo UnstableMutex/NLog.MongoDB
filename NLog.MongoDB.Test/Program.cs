@@ -11,6 +11,8 @@ namespace NLog.MongoDB.Test
             //cl.GetServer().GetDatabase("Logs").Drop();
             var logger = LogManager.GetCurrentClassLogger();
             logger.Debug("debug message");
+            logger.Error("err raised");
+            Console.WriteLine(Environment.UserName);
             logger.WriteAppStarted();
             logger.WriteAppStarted(new Version(1,2,3,4));
         }
