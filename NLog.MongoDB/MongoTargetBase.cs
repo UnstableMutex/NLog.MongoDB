@@ -21,7 +21,6 @@ namespace NLog.MongoDB
             DatabaseName = "Logs";
             AppName = "Application";
             CollectionName = AppName + "Log";
-
         }
 
         public byte ExceptionRecursionLevel { get; set; }
@@ -99,11 +98,14 @@ namespace NLog.MongoDB
             var doc = new BsonDocument();
             AddStringProperties(ex, doc);
             AddIntProperties(ex, doc);
-            doc.Add("TargetSite", ex.TargetSite.Name);
             doc.Add("exType", ex.GetType().FullName);
-            if (ex.TargetSite.DeclaringType != null)
+            if (ex.TargetSite != null)
             {
-                doc.Add("ClassName", ex.TargetSite.DeclaringType.FullName);
+                doc.Add("TargetSite", ex.TargetSite.Name);
+                if (ex.TargetSite.DeclaringType != null)
+                {
+                    doc.Add("ClassName", ex.TargetSite.DeclaringType.FullName);
+                }
             }
             if (ex.InnerException != null && level > 0)
             {
