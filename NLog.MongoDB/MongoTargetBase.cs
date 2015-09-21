@@ -13,7 +13,7 @@ namespace NLog.MongoDB
     [Target("MongoTarget")]
     public class MongoTargetBase : TargetWithLayout
     {
-        protected MongoCollection<BsonDocument> _coll;
+        protected IMongoCollection<BsonDocument> _coll;
 
         public MongoTargetBase()
         {
@@ -32,9 +32,9 @@ namespace NLog.MongoDB
         public string DatabaseName { get; set; }
         protected string CollectionName { get; set; }
 
-        protected MongoDatabase GetDatabase()
+        protected IMongoDatabase GetDatabase()
         {
-            MongoDatabase db = new MongoClient(ConnectionString).GetServer().GetDatabase(DatabaseName);
+            IMongoDatabase db = new MongoClient(ConnectionString).GetDatabase(DatabaseName);
             return db;
         }
 
@@ -43,31 +43,41 @@ namespace NLog.MongoDB
             CollectionName = AppName + "Log";
             if (_coll == null)
             {
-                MongoDatabase db = GetDatabase();
-                if (!db.CollectionExists(CollectionName))
+                var db = GetDatabase();
+
+                var lc = db.ListCollectionsAsync().Result;
+                var l = lc.ToListAsync().Result;
+                var names = l.Select(x => x["name"].AsString);
+                var tmp = names.Contains(CollectionName);
+                if (!tmp)
                 {
                     CreateCollection();
                 }
-                _coll = db.GetCollection(CollectionName);
+                _coll = db.GetCollection<BsonDocument>(CollectionName);
             }
         }
 
         protected virtual void CreateCollection()
         {
-            MongoDatabase db = GetDatabase();
-            db.CreateCollection(CollectionName);
+            var db = GetDatabase();
+            db.CreateCollectionAsync(CollectionName);
+
+
         }
 
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
             IEnumerable<BsonDocument> docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent));
-            _coll.InsertBatch(docs);
+
+            _coll.InsertManyAsync(docs);
+            // _coll.InsertBatch(docs);
         }
 
         protected override void Write(LogEventInfo logEvent)
         {
             BsonDocument doc = GetDocFromLogEventInfo(logEvent);
-            _coll.Save(doc);
+            _coll.InsertOneAsync(doc);
+            // _coll.Save(doc);
         }
 
         protected virtual BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)

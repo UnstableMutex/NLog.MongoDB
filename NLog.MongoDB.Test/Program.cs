@@ -7,8 +7,9 @@ namespace NLog.MongoDB.Test
     {
         static void Main(string[] args)
         {
-            //MongoClient cl=new MongoClient("mongodb://localhost");
-            //cl.GetServer().GetDatabase("Logs").Drop();
+            MongoClient cl = new MongoClient("mongodb://localhost");
+            //cl.GetDatabase("Logs")
+            cl.DropDatabaseAsync("Logs");
             var logger = LogManager.GetCurrentClassLogger();
             logger.Debug("debug message");
             logger.Error("err raised");

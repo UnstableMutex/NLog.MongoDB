@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 using NLog.Common;
 using NLog.LogReceiverService;
 using NLog.Targets;
@@ -25,9 +24,12 @@ namespace NLog.MongoDB
         protected override void InitializeTarget()
         {
             var db = GetDatabase();
-            var subscribersCollection = db.GetCollection("Subscribers");
+            var subscribersCollection = db.GetCollection<BsonDocument>("Subscribers");
             StringCollection coll = new StringCollection();
-            foreach (BsonDocument sub in subscribersCollection.FindAll())
+          //  subscribersCollection.fi
+            ;
+
+            foreach (BsonDocument sub in subscribersCollection.Find(_ => true).ToListAsync().Result)
             {
 
                 if (sub.Contains(appnames))
@@ -63,9 +65,9 @@ namespace NLog.MongoDB
 
         protected override void CreateCollection()
         {
-            MongoDatabase db = GetDatabase();
-            CollectionOptionsBuilder b = CollectionOptions.SetCapped(true).SetMaxSize(MaxSize);
-            db.CreateCollection(CollectionName, b);
+            var db = GetDatabase();
+            CreateCollectionOptions cco=new CreateCollectionOptions(){Capped = true,MaxSize = MaxSize};
+            db.CreateCollectionAsync(CollectionName, cco);
         }
 
         protected override BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
@@ -85,13 +87,13 @@ namespace NLog.MongoDB
                 return;
             if (doc["Subscribers"].AsBsonArray.Count > 0)
             {
-                _coll.Save(doc);
+                _coll.InsertOneAsync(doc);
             }
         }
         protected override void Write(AsyncLogEventInfo[] logEvents)
         {
             IEnumerable<BsonDocument> docs = logEvents.Select(l => GetDocFromLogEventInfo(l.LogEvent)).Where(x => x != null);
-            _coll.InsertBatch(docs);
+            _coll.InsertManyAsync(docs);
         }
 
     }

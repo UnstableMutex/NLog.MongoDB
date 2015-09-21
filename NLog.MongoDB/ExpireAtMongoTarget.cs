@@ -1,7 +1,6 @@
 ﻿using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 using NLog.Targets;
 
 namespace NLog.MongoDB
@@ -22,12 +21,11 @@ namespace NLog.MongoDB
         protected override void CreateCollection()
         {
             base.CreateCollection();
-            MongoCollection<BsonDocument> coll = GetDatabase().GetCollection(CollectionName);
-            var b = new IndexKeysBuilder();
-            var ob = new IndexOptionsBuilder();
-            ob = ob.SetTimeToLive(new TimeSpan(0));
-            b = b.Ascending(fieldName);
-            coll.CreateIndex(b, ob);
+            IMongoCollection<BsonDocument> coll = GetDatabase().GetCollection<BsonDocument>(CollectionName);
+            var ob = new CreateIndexOptions();
+            ob.ExpireAfter = TimeSpan.FromTicks(0);
+            var b = Builders<BsonDocument>.IndexKeys.Ascending(fieldName);
+            coll.Indexes.CreateOneAsync(b, ob);
         }
 
         protected override BsonDocument GetDocFromLogEventInfo(LogEventInfo logEvent)
